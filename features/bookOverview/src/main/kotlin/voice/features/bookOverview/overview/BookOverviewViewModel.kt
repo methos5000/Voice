@@ -29,6 +29,7 @@ import voice.core.data.repo.BookRepository
 import voice.core.data.repo.internals.dao.RecentBookSearchDao
 import voice.core.data.store.CurrentBookStore
 import voice.core.data.store.GridModeStore
+import voice.core.data.store.UpNextBookStore
 import voice.core.featureflag.ExperimentalPlaybackPersistenceQualifier
 import voice.core.featureflag.FeatureFlag
 import voice.core.featureflag.FolderPickerInSettingsFeatureFlagQualifier
@@ -53,6 +54,8 @@ class BookOverviewViewModel(
   private val playerController: PlayerController,
   @CurrentBookStore
   private val currentBookStoreDataStore: DataStore<BookId?>,
+  @UpNextBookStore
+  private val upNextBookStore: DataStore<BookId?>,
   @GridModeStore
   private val gridModeStore: DataStore<GridMode>,
   private val gridCount: GridCount,
@@ -85,6 +88,8 @@ class BookOverviewViewModel(
       .collectAsState(initial = emptyList()).value
     val currentBookId = remember { currentBookStoreDataStore.data }
       .collectAsState(initial = null).value
+    val upNextBookId = remember { upNextBookStore.data }
+      .collectAsState(initial = null).value
     val scannerActive = remember { mediaScanner.scannerActive }
       .collectAsState(initial = false).value
     val gridMode = remember { gridModeStore.data }
@@ -105,25 +110,24 @@ class BookOverviewViewModel(
 
     val bookSearchViewState = bookSearchViewState(layoutMode)
 
+    val upNextBook = books.firstOrNull { it.id == upNextBookId }
+    val regularBooks = if (upNextBook != null) books.filter { it.id != upNextBookId } else books
+    val groupedBooks = regularBooks
+      .groupBy { it.category }
+      .mapValues { (category, books) ->
+        books
+          .sortedWith(category.comparator)
+          .associate { book -> book.id to rememberBookItemState(book, playState, currentBookId) }
+      }
+      .toMutableMap()
+    if (upNextBook != null) {
+      groupedBooks[BookOverviewCategory.UP_NEXT] = mapOf(
+        upNextBook.id to rememberBookItemState(upNextBook, playState, currentBookId),
+      )
+    }
     return BookOverviewViewState(
       layoutMode = layoutMode,
-      books = books
-        .groupBy {
-          it.category
-        }
-        .mapValues { (category, books) ->
-          books
-            .sortedWith(category.comparator)
-            .associate { book ->
-              val isPlaying = playState == PlayStateManager.PlayState.Playing && currentBookId == book.id
-              book.id to if (experimentalPlaybackPersistenceFeatureFlag.get() && isPlaying) {
-                rememberProgressingBookItemViewState(book)
-              } else {
-                rememberUpdatedState(book.toItemViewState())
-              }
-            }
-        }
-        .toSortedMap(),
+      books = groupedBooks.toSortedMap(),
       playButtonState = if (playState == PlayStateManager.PlayState.Playing) {
         BookOverviewViewState.PlayButtonState.Playing
       } else {
@@ -141,6 +145,20 @@ class BookOverviewViewModel(
       showStoragePermissionBugCard = hasStoragePermissionBug,
       showFolderPickerIcon = !folderPickerInSettingsFeatureFlag.get(),
     )
+  }
+
+  @Composable
+  private fun rememberBookItemState(
+    book: Book,
+    playState: PlayStateManager.PlayState,
+    currentBookId: BookId?,
+  ): State<BookOverviewItemViewState> {
+    val isPlaying = playState == PlayStateManager.PlayState.Playing && currentBookId == book.id
+    return if (experimentalPlaybackPersistenceFeatureFlag.get() && isPlaying) {
+      rememberProgressingBookItemViewState(book)
+    } else {
+      rememberUpdatedState(book.toItemViewState())
+    }
   }
 
   @Composable
