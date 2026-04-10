@@ -14,6 +14,10 @@ enum class BookOverviewCategory(
     nameRes = StringsR.string.book_header_current,
     comparator = BookComparator.ByLastPlayed,
   ),
+  UP_NEXT(
+    nameRes = StringsR.string.book_header_up_next,
+    comparator = BookComparator.ByName,
+  ),
   NOT_STARTED(
     nameRes = StringsR.string.book_header_not_started,
     comparator = BookComparator.ByName,
