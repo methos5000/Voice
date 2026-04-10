@@ -1,6 +1,7 @@
 package voice.features.playbackScreen
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -79,15 +80,23 @@ class BookPlayViewModel(
   private val _dialogState = mutableStateOf<BookPlayDialogViewState?>(null)
   internal val dialogState: State<BookPlayDialogViewState?> get() = _dialogState
 
-  init {
-    scope.launch {
-      player.pauseIfCurrentBookDifferentFrom(bookId)
-      currentBookStoreId.updateData { bookId }
-    }
-  }
-
   @Composable
   fun viewState(): BookPlayViewState? {
+    val currentBookId by remember { currentBookStoreId.data }.collectAsState(initial = bookId)
+
+    player.pauseIfCurrentBookDifferentFrom(currentBookId ?: bookId)
+
+    LaunchedEffect(Unit) {
+      currentBookStoreId.updateData { bookId }
+    }
+
+    if (currentBookId != null && currentBookId != bookId) {
+      LaunchedEffect(currentBookId) {
+        currentBookId?.let { navigator.replaceTop(Destination.Playback(it)) }
+      }
+      return null
+    }
+
     val persistedBook = remember(bookId) {
       bookRepository.flow(bookId).filterNotNull()
     }.collectAsState(initial = null).value ?: return null
