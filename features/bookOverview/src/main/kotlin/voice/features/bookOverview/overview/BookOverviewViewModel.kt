@@ -29,6 +29,7 @@ import voice.core.data.repo.BookRepository
 import voice.core.data.repo.internals.dao.RecentBookSearchDao
 import voice.core.data.store.CurrentBookStore
 import voice.core.data.store.GridModeStore
+import voice.core.data.store.UpNextBookStore
 import voice.core.featureflag.ExperimentalPlaybackPersistenceQualifier
 import voice.core.featureflag.FeatureFlag
 import voice.core.featureflag.FolderPickerInSettingsFeatureFlagQualifier
@@ -54,6 +55,8 @@ class BookOverviewViewModel(
   private val playerController: PlayerController,
   @CurrentBookStore
   private val currentBookStoreDataStore: DataStore<BookId?>,
+  @UpNextBookStore
+  private val upNextBookStore: DataStore<BookId?>,
   @GridModeStore
   private val gridModeStore: DataStore<GridMode>,
   private val gridCount: GridCount,
@@ -86,6 +89,8 @@ class BookOverviewViewModel(
       .collectAsState(initial = emptyList()).value
     val currentBookId = remember { currentBookStoreDataStore.data }
       .collectAsState(initial = null).value
+    val upNextBookId = remember { upNextBookStore.data }
+      .collectAsState(initial = null).value
     val scannerActive = remember { mediaScanner.scannerActive }
       .collectAsState(initial = false).value
     val gridMode = remember { gridModeStore.data }
@@ -114,23 +119,32 @@ class BookOverviewViewModel(
       remember { mutableStateOf(null) }
     }
 
+    val upNextBook = books.firstOrNull { it.id == upNextBookId }
+    val regularBooks = if (upNextBook != null) books.filter { it.id != upNextBookId } else books
+    val groupedBooks = regularBooks
+      .groupBy { it.category }
+      .mapValues { (category, books) ->
+        books
+          .sortedWith(category.comparator)
+          .associate { book ->
+            book.id to book.itemViewState(
+              currentBookId = currentBookId,
+              livePlaybackState = { livePlaybackState.value },
+            )
+          }
+      }
+      .toMutableMap()
+    if (upNextBook != null) {
+      groupedBooks[BookOverviewCategory.UP_NEXT] = mapOf(
+        upNextBook.id to upNextBook.itemViewState(
+          currentBookId = currentBookId,
+          livePlaybackState = { livePlaybackState.value },
+        ),
+      )
+    }
     return BookOverviewViewState(
       layoutMode = layoutMode,
-      books = books
-        .groupBy {
-          it.category
-        }
-        .mapValues { (category, books) ->
-          books
-            .sortedWith(category.comparator)
-            .associate { book ->
-              book.id to book.itemViewState(
-                currentBookId = currentBookId,
-                livePlaybackState = { livePlaybackState.value },
-              )
-            }
-        }
-        .toSortedMap(),
+      books = groupedBooks.toSortedMap(),
       playButtonState = if (playState == PlayStateManager.PlayState.Playing) {
         BookOverviewViewState.PlayButtonState.Playing
       } else {
