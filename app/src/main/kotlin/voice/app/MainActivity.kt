@@ -103,6 +103,10 @@ class MainActivity : AppCompatActivity() {
                   backStack.removeLastOrNull()
                 }
               }
+              is NavigationCommand.ReplaceTop -> {
+                backStack.removeLastOrNull()
+                backStack += command.destination
+              }
               is NavigationCommand.SetRoot -> {
                 backStack.clear()
                 backStack.add(command.root)

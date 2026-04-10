@@ -29,6 +29,12 @@ class Navigator {
     }
   }
 
+  fun replaceTop(destination: Destination.Compose) {
+    scope.launch {
+      _navigationCommands.emit(NavigationCommand.ReplaceTop(destination))
+    }
+  }
+
   fun setRoot(destination: Destination.Compose) {
     scope.launch {
       _navigationCommands.emit(NavigationCommand.SetRoot(destination))
