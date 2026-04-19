@@ -21,4 +21,5 @@ dependencies {
   implementation(libs.material)
 
   testImplementation(libs.turbine)
+  testImplementation(libs.molecule)
 }

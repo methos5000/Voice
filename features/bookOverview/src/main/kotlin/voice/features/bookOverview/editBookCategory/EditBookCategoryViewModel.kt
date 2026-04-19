@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.first
 import voice.core.data.BookId
 import voice.core.data.repo.BookRepository
 import voice.core.data.store.UpNextBookStore
+import voice.core.featureflag.FeatureFlag
+import voice.core.featureflag.UpNextFeatureFlagQualifier
 import voice.features.bookOverview.bottomSheet.BottomSheetItem
 import voice.features.bookOverview.bottomSheet.BottomSheetItemViewModel
 import voice.features.bookOverview.di.BookOverviewScope
@@ -19,33 +21,30 @@ import java.time.Instant
 class EditBookCategoryViewModel(
   private val repo: BookRepository,
   @UpNextBookStore private val upNextBookStore: DataStore<BookId?>,
+  @UpNextFeatureFlagQualifier private val upNextFeatureFlag: FeatureFlag<Boolean>,
 ) : BottomSheetItemViewModel {
 
   override suspend fun items(bookId: BookId): List<BottomSheetItem> {
     val book = repo.get(bookId) ?: return emptyList()
-    val isUpNext = upNextBookStore.data.first() == bookId
-    return when {
-      isUpNext -> listOf(
+    val upNextEnabled = upNextFeatureFlag.get()
+    val isUpNext = upNextEnabled && upNextBookStore.data.first() == bookId
+    if (isUpNext) return listOf(BottomSheetItem.ClearUpNext)
+    return when (book.category) {
+      BookOverviewCategory.CURRENT -> listOf(
+        BottomSheetItem.BookCategoryMarkAsNotStarted,
+        BottomSheetItem.BookCategoryMarkAsCompleted,
+      )
+      BookOverviewCategory.NOT_STARTED -> listOfNotNull(
+        if (upNextEnabled) BottomSheetItem.PlayNext else null,
+        BottomSheetItem.BookCategoryMarkAsCurrent,
+        BottomSheetItem.BookCategoryMarkAsCompleted,
+      )
+      BookOverviewCategory.FINISHED -> listOfNotNull(
+        if (upNextEnabled) BottomSheetItem.PlayNext else null,
         BottomSheetItem.BookCategoryMarkAsCurrent,
         BottomSheetItem.BookCategoryMarkAsNotStarted,
       )
-      else -> when (book.category) {
-        BookOverviewCategory.CURRENT -> listOf(
-          BottomSheetItem.BookCategoryMarkAsNotStarted,
-          BottomSheetItem.BookCategoryMarkAsCompleted,
-        )
-        BookOverviewCategory.NOT_STARTED -> listOf(
-          BottomSheetItem.PlayNext,
-          BottomSheetItem.BookCategoryMarkAsCurrent,
-          BottomSheetItem.BookCategoryMarkAsCompleted,
-        )
-        BookOverviewCategory.FINISHED -> listOf(
-          BottomSheetItem.PlayNext,
-          BottomSheetItem.BookCategoryMarkAsCurrent,
-          BottomSheetItem.BookCategoryMarkAsNotStarted,
-        )
-        BookOverviewCategory.UP_NEXT -> emptyList()
-      }
+      BookOverviewCategory.UP_NEXT -> error("UP_NEXT is a UI-only grouping, never set on Book.category")
     }
   }
 
@@ -55,6 +54,10 @@ class EditBookCategoryViewModel(
   ) {
     if (item == BottomSheetItem.PlayNext) {
       upNextBookStore.updateData { bookId }
+      return
+    }
+    if (item == BottomSheetItem.ClearUpNext) {
+      upNextBookStore.updateData { null }
       return
     }
 

@@ -10,8 +10,14 @@ import voice.core.data.BookId
 import voice.core.data.repo.BookRepository
 import voice.core.data.store.CurrentBookStore
 import voice.core.data.store.UpNextBookStore
+import voice.core.featureflag.FeatureFlag
+import voice.core.featureflag.UpNextFeatureFlagQualifier
 import voice.core.playback.session.MediaItemProvider
+import voice.core.logging.api.Logger
 
+/**
+ * Listens for [Player.STATE_ENDED] and advances to the book queued in [UpNextBookStore].
+ */
 @Inject
 class UpNextAdvancer(
   @UpNextBookStore private val upNextBookStore: DataStore<BookId?>,
@@ -19,6 +25,7 @@ class UpNextAdvancer(
   private val bookRepository: BookRepository,
   private val mediaItemProvider: MediaItemProvider,
   private val scope: CoroutineScope,
+  @UpNextFeatureFlagQualifier private val upNextFeatureFlag: FeatureFlag<Boolean>,
 ) : Player.Listener {
 
   private lateinit var player: Player
@@ -31,17 +38,21 @@ class UpNextAdvancer(
 
   override fun onPlaybackStateChanged(playbackState: Int) {
     if (playbackState != Player.STATE_ENDED) return
+    if (!upNextFeatureFlag.get()) return
     scope.launch {
       val nextBookId = upNextBookStore.data.first() ?: return@launch
-      val nextBook = bookRepository.get(nextBookId)
-      if (nextBook == null) {
-        upNextBookStore.updateData { null }
-        return@launch
+      val nextBook = try {
+        bookRepository.get(nextBookId)
+      } catch (e: Exception) {
+        Logger.w(e, "Failed to load up-next book $nextBookId")
+        null
       }
+      // Clear before writing CurrentBookStore so the overview never sees the same book in both buckets.
+      upNextBookStore.updateData { null }
+      if (nextBook == null) return@launch
       currentBookStore.updateData { nextBookId }
       player.setMediaItem(mediaItemProvider.mediaItem(nextBook))
       player.prepare()
-      upNextBookStore.updateData { null }
       player.play()
     }
   }

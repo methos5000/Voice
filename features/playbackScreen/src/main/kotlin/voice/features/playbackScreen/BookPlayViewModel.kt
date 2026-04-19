@@ -84,17 +84,16 @@ class BookPlayViewModel(
   fun viewState(): BookPlayViewState? {
     val currentBookId by remember { currentBookStoreId.data }.collectAsState(initial = bookId)
 
-    player.pauseIfCurrentBookDifferentFrom(currentBookId ?: bookId)
-
-    LaunchedEffect(Unit) {
-      currentBookStoreId.updateData { bookId }
-    }
-
     if (currentBookId != null && currentBookId != bookId) {
       LaunchedEffect(currentBookId) {
-        navigator.replaceTop(Destination.Playback(currentBookId!!))
+        currentBookId?.let { navigator.replaceTop(Destination.Playback(it)) }
       }
       return null
+    }
+
+    LaunchedEffect(bookId) {
+      player.pauseIfCurrentBookDifferentFrom(bookId)
+      currentBookStoreId.updateData { bookId }
     }
 
     val initialBook = remember(bookId) {
