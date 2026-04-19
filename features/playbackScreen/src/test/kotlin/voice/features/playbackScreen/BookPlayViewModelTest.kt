@@ -17,9 +17,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Test
+import voice.core.playback.playstate.PlayStateManager
+import voice.navigation.Destination
+import voice.navigation.Navigator
 import voice.core.common.DispatcherProvider
 import voice.core.data.Book
 import voice.core.data.BookContent
@@ -79,6 +83,10 @@ class BookPlayViewModelTest {
   private val currentBookResolver = mockk<CurrentBookResolver> {
     coEvery { book(book.id) } returns book
   }
+  private val playStateManager = mockk<PlayStateManager> {
+    every { flow } returns MutableStateFlow(PlayStateManager.PlayState.Paused)
+  }
+  private val navigator = mockk<Navigator>(relaxed = true)
   private val viewModel = BookPlayViewModel(
     bookRepository = mockk {
       coEvery { get(book.id) } returns book
@@ -87,11 +95,12 @@ class BookPlayViewModelTest {
     currentBookResolver = currentBookResolver,
     player = player.apply {
       every { pauseIfCurrentBookDifferentFrom(book.id) } just Runs
+      every { pauseIfCurrentBookDifferentFrom(not(book.id)) } just Runs
     },
     sleepTimer = sleepTimer,
     playStateManager = playStateManager,
     currentBookStoreId = currentBookStoreId,
-    navigator = mockk(),
+    navigator = navigator,
     bookmarkRepository = mockk {
       coEvery { addBookmarkAtBookPosition(book, any(), any()) } returns Bookmark(
         bookId = book.id,
@@ -214,6 +223,30 @@ class BookPlayViewModelTest {
         time = "9:00",
       ),
     )
+  }
+
+  @Test
+  fun `divergent currentBookId yields null viewState`() = scope.runTest {
+    val otherId = BookId(UUID.randomUUID().toString())
+    currentBookStoreId.updateData { otherId }
+    backgroundScope.launchMolecule(RecompositionMode.Immediate) {
+      viewModel.viewState()
+    }.test {
+      awaitItem() shouldBe null
+    }
+  }
+
+  @Test
+  fun `LaunchedEffect pauses and stores bookId once per bookId`() = scope.runTest {
+    backgroundScope.launchMolecule(RecompositionMode.Immediate) {
+      viewModel.viewState()
+    }.test {
+      awaitItem()
+      (playStateManager.flow as MutableStateFlow).value = PlayStateManager.PlayState.Playing
+      awaitItem()
+    }
+    verify(exactly = 1) { player.pauseIfCurrentBookDifferentFrom(book.id) }
+    currentBookStoreId.data.first() shouldBe book.id
   }
 
   @Test

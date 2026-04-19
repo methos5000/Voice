@@ -22,4 +22,5 @@ dependencies {
 
   testImplementation(libs.molecule)
   testImplementation(libs.turbine)
+  testImplementation(libs.molecule)
 }

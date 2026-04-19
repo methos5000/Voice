@@ -144,5 +144,6 @@
     </plurals>
     <string name="playback.current_chapter">Current chapter</string>
     <string name="play_next">Play Next</string>
+    <string name="menu_clear_up_next">Clear Up Next</string>
     <string name="book_header_up_next">Up Next</string>
 </resources>

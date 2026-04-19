@@ -55,6 +55,7 @@ interface PlaybackModule {
     positionUpdater: PositionUpdater,
     volumeGain: VolumeGain,
     durationInconsistenciesUpdater: DurationInconsistenciesUpdater,
+    upNextAdvancer: UpNextAdvancer,
     @Media3AudioOffloadFeatureFlagQualifier media3AudioOffloadFeatureFlag: FeatureFlag<Boolean>,
   ): Player {
     val audioAttributes = AudioAttributes.Builder()
@@ -83,6 +84,7 @@ interface PlaybackModule {
         playStateDelegatingListener.attachTo(player)
         positionUpdater.attachTo(player)
         durationInconsistenciesUpdater.attachTo(player)
+        upNextAdvancer.attachTo(player)
         player.onAudioSessionIdChanged {
           volumeGain.audioSessionId = it
         }
@@ -101,9 +103,7 @@ interface PlaybackModule {
     callback: LibrarySessionCallback,
     mainActivityIntentProvider: MainActivityIntentProvider,
     context: Context,
-    upNextAdvancer: UpNextAdvancer,
   ): MediaLibraryService.MediaLibrarySession {
-    upNextAdvancer.attachTo(player)
     return MediaLibraryService.MediaLibrarySession.Builder(service, player, callback)
       .setSessionActivity(mainActivityIntentProvider.toCurrentBook())
       .setMediaButtonPreferences(

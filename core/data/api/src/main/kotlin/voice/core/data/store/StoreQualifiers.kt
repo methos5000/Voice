@@ -41,5 +41,6 @@ public annotation class DeveloperMenuUnlockedStore
 @Qualifier
 public annotation class FeatureFlagOverridesStore
 
+/** Single-book queue; cardinality is 1 by design. */
 @Qualifier
 public annotation class UpNextBookStore
