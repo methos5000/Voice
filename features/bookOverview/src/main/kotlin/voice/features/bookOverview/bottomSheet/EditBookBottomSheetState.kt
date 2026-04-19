@@ -8,6 +8,7 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.NotStarted
+import androidx.compose.material.icons.outlined.PlaylistRemove
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -27,4 +28,5 @@ enum class BottomSheetItem(
   BookCategoryMarkAsCurrent(StringsR.string.mark_as_current, Icons.Outlined.NotStarted),
   BookCategoryMarkAsCompleted(StringsR.string.mark_as_completed, Icons.Outlined.Done),
   PlayNext(StringsR.string.play_next, Icons.Outlined.SkipNext),
+  ClearUpNext(StringsR.string.menu_clear_up_next, Icons.Outlined.PlaylistRemove),
 }

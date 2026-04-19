@@ -18,6 +18,7 @@ import voice.core.data.BookId
 import voice.core.data.Chapter
 import voice.core.data.ChapterId
 import voice.core.data.repo.BookRepository
+import voice.core.featureflag.MemoryFeatureFlag
 import voice.core.playback.MemoryDataStore
 import voice.core.playback.session.MediaItemProvider
 import voice.core.playback.session.search.book
@@ -33,6 +34,7 @@ class UpNextAdvancerTest {
   private val mediaItemProvider = mockk<MediaItemProvider>(relaxed = true)
   private val scope = TestScope()
   private val player = mockk<Player>(relaxed = true)
+  private val upNextFlag = MemoryFeatureFlag(initialValue = true, key = "up_next")
 
   private val advancer = UpNextAdvancer(
     upNextBookStore = upNextStore,
@@ -40,6 +42,7 @@ class UpNextAdvancerTest {
     bookRepository = repo,
     mediaItemProvider = mediaItemProvider,
     scope = scope,
+    upNextFeatureFlag = upNextFlag,
   ).also { it.attachTo(player) }
 
   @Test
@@ -74,6 +77,20 @@ class UpNextAdvancerTest {
     advanceUntilIdle()
 
     upNextStore.data.first() shouldBe null
+    verify(exactly = 0) { player.play() }
+  }
+
+  @Test
+  fun `feature flag off short-circuits`() = scope.runTest {
+    val targetBook = book(listOf(chapter(), chapter()))
+    upNextStore.updateData { targetBook.id }
+    upNextFlag.value = false
+
+    advancer.onPlaybackStateChanged(Player.STATE_ENDED)
+    advanceUntilIdle()
+
+    upNextStore.data.first() shouldBe targetBook.id
+    currentStore.data.first() shouldBe null
     verify(exactly = 0) { player.play() }
   }
 

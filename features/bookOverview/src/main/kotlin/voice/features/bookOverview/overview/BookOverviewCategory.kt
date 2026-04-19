@@ -6,6 +6,7 @@ import voice.core.data.BookComparator
 import java.util.concurrent.TimeUnit.SECONDS
 import voice.core.strings.R as StringsR
 
+// Declaration order drives toSortedMap() iteration in BookOverviewViewModel — UP_NEXT must sit between CURRENT and NOT_STARTED.
 enum class BookOverviewCategory(
   @StringRes val nameRes: Int,
   val comparator: Comparator<Book>,
