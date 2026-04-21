@@ -43,10 +43,8 @@ class UpNextAdvancer(
         Logger.w(e, "Failed to load up-next book $nextBookId")
         null
       }
-      // Clear before writing CurrentBookStore so the overview never sees the same book in both buckets.
       upNextBookStore.updateData { null }
       if (nextBook == null) return@launch
-      currentBookStore.updateData { nextBookId }
       // The raw ExoPlayer needs chapter-level MediaItems (with sourceUri). The book-level
       // MediaItem is a browsable node with no URI and would NPE in ProgressiveMediaSource.
       player.setMediaItems(
@@ -55,6 +53,9 @@ class UpNextAdvancer(
         nextBook.content.positionInChapter,
       )
       player.prepare()
+      // Write currentBookStore after prepare so the UI redirect fires when the player is ready,
+      // not while it is still in STATE_ENDED.
+      currentBookStore.updateData { nextBookId }
       player.play()
     }
   }

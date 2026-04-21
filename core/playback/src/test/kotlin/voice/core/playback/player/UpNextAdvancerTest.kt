@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -61,7 +62,11 @@ class UpNextAdvancerTest {
 
     currentStore.data.first() shouldBe targetBook.id
     upNextStore.data.first() shouldBe null
-    verify { player.play() }
+    verifyOrder {
+      player.setMediaItems(any(), any(), any())
+      player.prepare()
+      player.play()
+    }
   }
 
   @Test
