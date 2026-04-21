@@ -78,20 +78,6 @@ interface FeatureFlagBindingContainer {
   @Binds
   @IntoSet
   fun bindMedia3AudioOffloadFeatureFlag(@Media3AudioOffloadFeatureFlagQualifier flag: FeatureFlag<Boolean>): FeatureFlag<*>
-
-  @Provides
-  @SingleIn(AppScope::class)
-  @UpNextFeatureFlagQualifier
-  fun upNextFeatureFlag(factory: FeatureFlagFactory): FeatureFlag<Boolean> {
-    return factory.boolean(
-      key = "up_next",
-      description = "Enables the Up Next queue and auto-advance.",
-    )
-  }
-
-  @Binds
-  @IntoSet
-  fun bindUpNextFeatureFlag(@UpNextFeatureFlagQualifier flag: FeatureFlag<Boolean>): FeatureFlag<*>
 }
 
 @Qualifier
@@ -108,6 +94,3 @@ annotation class ExperimentalPlaybackPersistenceQualifier
 
 @Qualifier
 annotation class Media3AudioOffloadFeatureFlagQualifier
-
-@Qualifier
-annotation class UpNextFeatureFlagQualifier
