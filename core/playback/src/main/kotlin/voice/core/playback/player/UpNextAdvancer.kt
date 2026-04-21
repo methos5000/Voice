@@ -51,7 +51,13 @@ class UpNextAdvancer(
       upNextBookStore.updateData { null }
       if (nextBook == null) return@launch
       currentBookStore.updateData { nextBookId }
-      player.setMediaItem(mediaItemProvider.mediaItem(nextBook))
+      // The raw ExoPlayer needs chapter-level MediaItems (with sourceUri). The book-level
+      // MediaItem is a browsable node with no URI and would NPE in ProgressiveMediaSource.
+      player.setMediaItems(
+        mediaItemProvider.chapters(nextBook),
+        nextBook.content.currentChapterIndex,
+        nextBook.content.positionInChapter,
+      )
       player.prepare()
       player.play()
     }

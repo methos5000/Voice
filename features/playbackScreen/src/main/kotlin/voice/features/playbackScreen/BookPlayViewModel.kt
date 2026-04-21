@@ -6,6 +6,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.datastore.core.DataStore
 import dev.zacsweers.metro.Assisted
@@ -13,6 +14,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -82,18 +84,26 @@ class BookPlayViewModel(
 
   @Composable
   fun viewState(): BookPlayViewState? {
-    val currentBookId by remember { currentBookStoreId.data }.collectAsState(initial = bookId)
+    // Commit this screen's bookId to the store before observing changes, so that
+    // DataStore's replay of a previously-persisted id does not trigger a spurious
+    // redirect on first composition. Only store mutations that happen *after* our
+    // write (e.g. UpNextAdvancer auto-advance) should redirect.
+    val redirectTo by produceState<BookId?>(null, bookId) {
+      currentBookStoreId.updateData { bookId }
+      currentBookStoreId.data
+        .filter { it != null && it != bookId }
+        .collect { value = it }
+    }
 
-    if (currentBookId != null && currentBookId != bookId) {
-      LaunchedEffect(currentBookId) {
-        currentBookId?.let { navigator.replaceTop(Destination.Playback(it)) }
+    if (redirectTo != null) {
+      LaunchedEffect(redirectTo) {
+        redirectTo?.let { navigator.replaceTop(Destination.Playback(it)) }
       }
       return null
     }
 
     LaunchedEffect(bookId) {
       player.pauseIfCurrentBookDifferentFrom(bookId)
-      currentBookStoreId.updateData { bookId }
     }
 
     val persistedBook = remember(bookId) {

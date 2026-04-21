@@ -227,12 +227,18 @@ class BookPlayViewModelTest {
 
   @Test
   fun `divergent currentBookId yields null viewState`() = scope.runTest {
-    val otherId = BookId(UUID.randomUUID().toString())
-    currentBookStoreId.updateData { otherId }
     backgroundScope.launchMolecule(RecompositionMode.Immediate) {
       viewModel.viewState()
     }.test {
-      awaitItem() shouldBe null
+      // Let produceState commit bookId before simulating a post-mount store change.
+      awaitItem()
+      runCurrent()
+      currentBookStoreId.data.first() shouldBe book.id
+
+      val otherId = BookId(UUID.randomUUID().toString())
+      currentBookStoreId.updateData { otherId }
+      runCurrent()
+      expectMostRecentItem() shouldBe null
     }
   }
 
