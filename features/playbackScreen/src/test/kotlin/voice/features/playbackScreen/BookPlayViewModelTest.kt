@@ -21,9 +21,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Test
-import voice.core.playback.playstate.PlayStateManager
-import voice.navigation.Destination
-import voice.navigation.Navigator
 import voice.core.common.DispatcherProvider
 import voice.core.data.Book
 import voice.core.data.BookContent
@@ -44,6 +41,8 @@ import voice.core.sleeptimer.SleepTimerMode
 import voice.core.sleeptimer.SleepTimerMode.TimedWithDuration
 import voice.core.sleeptimer.SleepTimerState
 import voice.features.sleepTimer.SleepTimerViewState
+import voice.navigation.Destination
+import voice.navigation.Navigator
 import java.time.Instant
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
@@ -82,9 +81,6 @@ class BookPlayViewModelTest {
   private val currentBookStoreId = MemoryDataStore<BookId?>(null)
   private val currentBookResolver = mockk<CurrentBookResolver> {
     coEvery { book(book.id) } returns book
-  }
-  private val playStateManager = mockk<PlayStateManager> {
-    every { flow } returns MutableStateFlow(PlayStateManager.PlayState.Paused)
   }
   private val navigator = mockk<Navigator>(relaxed = true)
   private val viewModel = BookPlayViewModel(

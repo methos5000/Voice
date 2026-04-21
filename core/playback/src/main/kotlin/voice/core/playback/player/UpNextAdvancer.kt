@@ -10,8 +10,8 @@ import voice.core.data.BookId
 import voice.core.data.repo.BookRepository
 import voice.core.data.store.CurrentBookStore
 import voice.core.data.store.UpNextBookStore
-import voice.core.playback.session.MediaItemProvider
 import voice.core.logging.api.Logger
+import voice.core.playback.session.MediaItemProvider
 
 /**
  * Listens for [Player.STATE_ENDED] and advances to the book queued in [UpNextBookStore].

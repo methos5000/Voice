@@ -21,9 +21,7 @@ class EditBookCategoryViewModelTest {
 
   private val repo = mockk<BookRepository>()
 
-  private fun viewModel(
-    upNextId: BookId? = null,
-  ) = EditBookCategoryViewModel(
+  private fun viewModel(upNextId: BookId? = null) = EditBookCategoryViewModel(
     repo = repo,
     upNextBookStore = MemoryDataStore(upNextId),
   )

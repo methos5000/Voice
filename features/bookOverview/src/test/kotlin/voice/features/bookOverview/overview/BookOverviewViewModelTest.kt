@@ -53,6 +53,7 @@ class BookOverviewViewModelTest {
         every { livePlaybackStateFlow(currentBook.id) } returns livePlaybackFlow
       },
       currentBookStoreDataStore = MemoryDataStore(currentBook.id),
+      upNextBookStore = MemoryDataStore(null),
       gridModeStore = MemoryDataStore(GridMode.LIST),
       gridCount = mockk<GridCount> {
         every { useGridAsDefault() } returns false

@@ -1,6 +1,7 @@
 package voice.core.playback.player
 
 import androidx.media3.common.Player
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.kotest.matchers.shouldBe
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -13,7 +14,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import voice.core.data.BookId
 import voice.core.data.Chapter
 import voice.core.data.ChapterId
