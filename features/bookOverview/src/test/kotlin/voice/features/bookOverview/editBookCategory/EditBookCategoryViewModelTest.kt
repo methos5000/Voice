@@ -12,7 +12,6 @@ import org.junit.Test
 import voice.core.data.BookContent
 import voice.core.data.BookId
 import voice.core.data.repo.BookRepository
-import voice.core.featureflag.MemoryFeatureFlag
 import voice.features.bookOverview.MemoryDataStore
 import voice.features.bookOverview.book
 import voice.features.bookOverview.bottomSheet.BottomSheetItem
@@ -24,11 +23,9 @@ class EditBookCategoryViewModelTest {
 
   private fun viewModel(
     upNextId: BookId? = null,
-    upNextEnabled: Boolean = true,
   ) = EditBookCategoryViewModel(
     repo = repo,
     upNextBookStore = MemoryDataStore(upNextId),
-    upNextFeatureFlag = MemoryFeatureFlag(initialValue = upNextEnabled, key = "up_next"),
   )
 
   @Test
@@ -72,26 +69,6 @@ class EditBookCategoryViewModelTest {
   }
 
   @Test
-  fun `flag off hides PlayNext for not-started book`() = runTest {
-    val book = book(time = 0)
-    coEvery { repo.get(book.id) } returns book
-    viewModel(upNextEnabled = false).items(book.id) shouldBe listOf(
-      BottomSheetItem.BookCategoryMarkAsCurrent,
-      BottomSheetItem.BookCategoryMarkAsCompleted,
-    )
-  }
-
-  @Test
-  fun `flag off ignores up-next override`() = runTest {
-    val book = book()
-    coEvery { repo.get(book.id) } returns book
-    viewModel(upNextId = book.id, upNextEnabled = false).items(book.id) shouldBe listOf(
-      BottomSheetItem.BookCategoryMarkAsNotStarted,
-      BottomSheetItem.BookCategoryMarkAsCompleted,
-    )
-  }
-
-  @Test
   fun `items when book not found`() = runTest {
     val bookId = BookId("missing")
     coEvery { repo.get(bookId) } returns null
@@ -103,7 +80,7 @@ class EditBookCategoryViewModelTest {
     val book = book()
     coEvery { repo.get(book.id) } returns book
     val upNextStore = MemoryDataStore<BookId?>(null)
-    val vm = EditBookCategoryViewModel(repo, upNextStore, MemoryFeatureFlag(initialValue = true, key = "up_next"))
+    val vm = EditBookCategoryViewModel(repo, upNextStore)
 
     vm.onItemClick(book.id, BottomSheetItem.PlayNext)
 
@@ -159,7 +136,7 @@ class EditBookCategoryViewModelTest {
     coEvery { repo.get(book.id) } returns book
     coEvery { repo.updateBook(any(), any()) } just Runs
     val upNextStore = MemoryDataStore<BookId?>(book.id)
-    val vm = EditBookCategoryViewModel(repo, upNextStore, MemoryFeatureFlag(initialValue = true, key = "up_next"))
+    val vm = EditBookCategoryViewModel(repo, upNextStore)
 
     vm.onItemClick(book.id, BottomSheetItem.BookCategoryMarkAsCurrent)
 
@@ -173,7 +150,7 @@ class EditBookCategoryViewModelTest {
     coEvery { repo.get(book.id) } returns book
     coEvery { repo.updateBook(any(), any()) } just Runs
     val upNextStore = MemoryDataStore<BookId?>(otherBookId)
-    val vm = EditBookCategoryViewModel(repo, upNextStore, MemoryFeatureFlag(initialValue = true, key = "up_next"))
+    val vm = EditBookCategoryViewModel(repo, upNextStore)
 
     vm.onItemClick(book.id, BottomSheetItem.BookCategoryMarkAsCurrent)
 

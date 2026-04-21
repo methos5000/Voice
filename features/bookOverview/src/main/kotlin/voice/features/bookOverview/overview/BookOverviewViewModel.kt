@@ -33,7 +33,6 @@ import voice.core.data.store.UpNextBookStore
 import voice.core.featureflag.ExperimentalPlaybackPersistenceQualifier
 import voice.core.featureflag.FeatureFlag
 import voice.core.featureflag.FolderPickerInSettingsFeatureFlagQualifier
-import voice.core.featureflag.UpNextFeatureFlagQualifier
 import voice.core.playback.PlayerController
 import voice.core.playback.playstate.PlayStateManager
 import voice.core.scanner.DeviceHasStoragePermissionBug
@@ -69,8 +68,6 @@ class BookOverviewViewModel(
   private val folderPickerInSettingsFeatureFlag: FeatureFlag<Boolean>,
   @ExperimentalPlaybackPersistenceQualifier
   private val experimentalPlaybackPersistenceFeatureFlag: FeatureFlag<Boolean>,
-  @UpNextFeatureFlagQualifier
-  private val upNextFeatureFlag: FeatureFlag<Boolean>,
 ) {
 
   private val scope = MainScope()
@@ -91,13 +88,8 @@ class BookOverviewViewModel(
       .collectAsState(initial = emptyList()).value
     val currentBookId = remember { currentBookStoreDataStore.data }
       .collectAsState(initial = null).value
-    val upNextEnabled = upNextFeatureFlag.get()
-    val upNextBookId = if (upNextEnabled) {
-      remember { upNextBookStore.data }
-        .collectAsState(initial = null).value
-    } else {
-      null
-    }
+    val upNextBookId = remember { upNextBookStore.data }
+      .collectAsState(initial = null).value
     val scannerActive = remember { mediaScanner.scannerActive }
       .collectAsState(initial = false).value
     val gridMode = remember { gridModeStore.data }
